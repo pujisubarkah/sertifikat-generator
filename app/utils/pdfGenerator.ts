@@ -1,16 +1,5 @@
 import JSZip from 'jszip'
 
-export interface CertificateConfig {
-  nomorTemplate: string
-  nomorStart: number
-  role: string
-  eventSubtitle: string
-  eventTitle: string
-  eventDescription: string
-  dateLocation: string
-  footerText: string
-}
-
 export async function generateSingleCertificatePdf(
   element: HTMLElement,
   fileName: string = 'Sertifikat.pdf'
@@ -39,7 +28,6 @@ export async function generateSingleCertificatePdf(
 
 export async function generateBatchCertificatesZip(
   names: string[],
-  config: CertificateConfig,
   renderElementFn: (name: string, index: number) => Promise<HTMLElement>,
   onProgress?: (current: number, total: number, currentName: string) => void
 ): Promise<Blob> {
@@ -56,15 +44,14 @@ export async function generateBatchCertificatesZip(
 
     // Give DOM time to update/render
     const el = await renderElementFn(name, i)
-    // Small delay to ensure styles/fonts are painted
-    await new Promise((resolve) => setTimeout(resolve, 60))
+    // Small delay to ensure styles/fonts/images are painted
+    await new Promise((resolve) => setTimeout(resolve, 50))
 
     const pdfBlob = await generateSingleCertificatePdf(el)
     
     // Clean file name
     const sanitizedName = name.replace(/[\\/:*?"<>|]/g, '_')
-    const currentNum = Number(config.nomorStart || 190) + i
-    const filename = `${String(currentNum).padStart(3, '0')} - Sertifikat - ${sanitizedName}.pdf`
+    const filename = `${String(i + 1).padStart(3, '0')} - Sertifikat - ${sanitizedName}.pdf`
     
     zip.file(filename, pdfBlob)
   }
