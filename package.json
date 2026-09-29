@@ -1,0 +1,24 @@
+{
+  "name": "sertifikat",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare"
+  },
+  "dependencies": {
+    "@nuxtjs/tailwindcss": "^6.14.0",
+    "canvas-confetti": "^1.9.4",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^4.2.1",
+    "jszip": "^3.10.2",
+    "lucide-vue-next": "^1.0.0",
+    "nuxt": "^4.5.2",
+    "papaparse": "^5.7.0",
+    "vue": "^3.5.43",
+    "vue-router": "^5.3.1"
+  }
+}
