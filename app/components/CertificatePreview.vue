@@ -1,60 +1,32 @@
 <template>
   <div
     :id="elementId || 'certificate-node'"
-    class="certificate-root relative bg-white overflow-hidden select-none"
-    :style="{
-      width: `${width}px`,
-      height: `${height}px`,
-      aspectRatio: '1414 / 1000'
-    }"
+    class="certificate-root relative w-full h-full flex items-center justify-center select-none"
   >
-    <!-- Certificate Background Image -->
-    <img
-      :src="customTemplateUrl || defaultTemplateUrl"
-      class="absolute inset-0 w-full h-full object-fill pointer-events-none z-0"
-      alt="Certificate Template"
-    />
+    <canvas
+      ref="canvasRef"
+      :width="width"
+      :height="height"
+      class="w-full h-full object-contain rounded shadow-2xl transition-all cursor-move"
+      @mousedown="handleMouseDown"
+      @touchstart.passive="handleTouchStart"
+      title="Klik dan seret untuk menggeser posisi nama langsung di sertifikat"
+    ></canvas>
 
-    <!-- Dynamic Name Overlay Container -->
+    <!-- Subtle Drag Overlay Indicator when dragging -->
     <div
-      class="absolute left-0 right-0 z-10 flex flex-col items-center justify-center px-16 text-center pointer-events-none"
-      :style="{
-        top: `${styles.nameY ?? 415}px`,
-        transform: `translate(${styles.nameOffsetX || 0}px, 0)`
-      }"
+      v-if="isDraggingText"
+      class="absolute top-3 left-3 bg-slate-900/90 text-amber-400 border border-amber-500/40 px-2.5 py-1 rounded-lg text-[11px] font-mono font-bold shadow-lg pointer-events-none"
     >
-      <div class="w-full max-w-4xl mx-auto flex flex-col items-center">
-        <!-- Participant Name -->
-        <div
-          class="tracking-wide px-4 transition-all truncate max-w-full"
-          :style="{
-            fontSize: `${styles.nameFontSize || 34}px`,
-            fontFamily: styles.nameFontFamily || 'Plus Jakarta Sans, sans-serif',
-            fontWeight: styles.nameFontWeight || 800,
-            color: styles.nameColor || '#000000',
-            letterSpacing: `${styles.nameLetterSpacing || 0.5}px`,
-            lineHeight: 1.2
-          }"
-        >
-          {{ participantName || 'Nama Peserta Lengkap, Gelar' }}
-        </div>
-
-        <!-- Optional Dynamic Underline Bar -->
-        <div
-          v-if="styles.showUnderline"
-          class="w-full max-w-2xl mx-auto transition-all"
-          :style="{
-            height: `${styles.underlineThickness || 2}px`,
-            marginTop: `${styles.underlineMarginTop || 6}px`,
-            backgroundColor: styles.nameColor || '#000000'
-          }"
-        ></div>
-      </div>
+      Y: {{ Math.round(styles?.nameY ?? 405) }}px | X: {{ Math.round(styles?.nameOffsetX ?? 0) }}px
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { ref, watch, onMounted, onUnmounted } from 'vue'
+import { preloadImage, drawCertificate } from '~/utils/certificateRenderer'
+
 export interface NameOnlyStyles {
   nameY?: number
   nameOffsetX?: number
@@ -77,6 +49,7 @@ const props = withDefaults(
     defaultTemplateUrl?: string
     participantName?: string
     styles?: NameOnlyStyles
+    allowDrag?: boolean
   }>(),
   {
     width: 1414,
@@ -86,19 +59,191 @@ const props = withDefaults(
     defaultTemplateUrl: '/template_original.jpg',
     participantName: 'Budi Santoso, S.AP., M.A.P.',
     styles: () => ({
-      nameY: 415,
+      nameY: 405,
       nameOffsetX: 0,
-      nameFontSize: 34,
-      nameFontFamily: 'Plus Jakarta Sans, sans-serif',
-      nameFontWeight: 800,
+      nameFontSize: 32,
+      nameFontFamily: "'Plus Jakarta Sans', sans-serif",
+      nameFontWeight: 700,
       nameColor: '#000000',
       nameLetterSpacing: 0.5,
       showUnderline: false,
       underlineThickness: 2,
-      underlineMarginTop: 6
-    })
+      underlineMarginTop: 18
+    }),
+    allowDrag: true
   }
 )
+
+const emit = defineEmits<{
+  (e: 'update:styles', styles: NameOnlyStyles): void
+}>()
+
+const canvasRef = ref<HTMLCanvasElement | null>(null)
+let loadedImage: HTMLImageElement | null = null
+const isDraggingText = ref(false)
+
+let startMouseY = 0
+let startMouseX = 0
+let startNameY = 0
+let startNameOffsetX = 0
+
+async function render() {
+  if (!canvasRef.value) return
+  const ctx = canvasRef.value.getContext('2d')
+  if (!ctx) return
+
+  const targetUrl = props.customTemplateUrl || props.defaultTemplateUrl
+
+  try {
+    if (!loadedImage || loadedImage.src !== targetUrl) {
+      loadedImage = await preloadImage(targetUrl)
+    }
+
+    // Ensure document fonts are loaded before drawing text
+    if (typeof document !== 'undefined' && document.fonts && document.fonts.ready) {
+      await document.fonts.ready
+    }
+
+    drawCertificate(
+      ctx,
+      loadedImage,
+      props.participantName,
+      props.styles,
+      props.width,
+      props.height
+    )
+  } catch (err) {
+    console.error('Error drawing certificate canvas:', err)
+  }
+}
+
+// Watch all props for immediate redraw
+watch(
+  () => [
+    props.customTemplateUrl,
+    props.defaultTemplateUrl,
+    props.participantName,
+    props.width,
+    props.height,
+    props.styles.nameY,
+    props.styles.nameOffsetX,
+    props.styles.nameFontSize,
+    props.styles.nameFontFamily,
+    props.styles.nameFontWeight,
+    props.styles.nameColor,
+    props.styles.nameLetterSpacing,
+    props.styles.showUnderline,
+    props.styles.underlineThickness,
+    props.styles.underlineMarginTop
+  ],
+  () => {
+    render()
+  },
+  { deep: true }
+)
+
+// Interactive Drag & Drop implementation
+function handleMouseDown(e: MouseEvent) {
+  if (!props.allowDrag || !canvasRef.value) return
+  isDraggingText.value = true
+  startMouseX = e.clientX
+  startMouseY = e.clientY
+  startNameY = props.styles.nameY ?? 405
+  startNameOffsetX = props.styles.nameOffsetX ?? 0
+
+  window.addEventListener('mousemove', handleMouseMove)
+  window.addEventListener('mouseup', handleMouseUp)
+}
+
+function handleMouseMove(e: MouseEvent) {
+  if (!isDraggingText.value || !canvasRef.value) return
+
+  const rect = canvasRef.value.getBoundingClientRect()
+  const scale = props.height / rect.height
+
+  const deltaY = (e.clientY - startMouseY) * scale
+  const deltaX = (e.clientX - startMouseX) * scale
+
+  const newY = Math.round(Math.max(50, Math.min(props.height - 50, startNameY + deltaY)))
+  const newX = Math.round(Math.max(-500, Math.min(500, startNameOffsetX + deltaX)))
+
+  // Directly update reactive styles object
+  props.styles.nameY = newY
+  props.styles.nameOffsetX = newX
+
+  emit('update:styles', {
+    ...props.styles,
+    nameY: newY,
+    nameOffsetX: newX
+  })
+}
+
+function handleMouseUp() {
+  isDraggingText.value = false
+  window.removeEventListener('mousemove', handleMouseMove)
+  window.removeEventListener('mouseup', handleMouseUp)
+}
+
+function handleTouchStart(e: TouchEvent) {
+  if (!props.allowDrag || !canvasRef.value || !e.touches[0]) return
+  isDraggingText.value = true
+  startMouseX = e.touches[0].clientX
+  startMouseY = e.touches[0].clientY
+  startNameY = props.styles.nameY ?? 405
+  startNameOffsetX = props.styles.nameOffsetX ?? 0
+
+  window.addEventListener('touchmove', handleTouchMove, { passive: false })
+  window.addEventListener('touchend', handleTouchEnd)
+}
+
+function handleTouchMove(e: TouchEvent) {
+  if (!isDraggingText.value || !canvasRef.value || !e.touches[0]) return
+  e.preventDefault()
+
+  const rect = canvasRef.value.getBoundingClientRect()
+  const scale = props.height / rect.height
+
+  const deltaY = (e.touches[0].clientY - startMouseY) * scale
+  const deltaX = (e.touches[0].clientX - startMouseX) * scale
+
+  const newY = Math.round(Math.max(50, Math.min(props.height - 50, startNameY + deltaY)))
+  const newX = Math.round(Math.max(-500, Math.min(500, startNameOffsetX + deltaX)))
+
+  props.styles.nameY = newY
+  props.styles.nameOffsetX = newX
+
+  emit('update:styles', {
+    ...props.styles,
+    nameY: newY,
+    nameOffsetX: newX
+  })
+}
+
+function handleTouchEnd() {
+  isDraggingText.value = false
+  window.removeEventListener('touchmove', handleTouchMove)
+  window.removeEventListener('touchend', handleTouchEnd)
+}
+
+onMounted(() => {
+  render()
+})
+
+onUnmounted(() => {
+  window.removeEventListener('mousemove', handleMouseMove)
+  window.removeEventListener('mouseup', handleMouseUp)
+  window.removeEventListener('touchmove', handleTouchMove)
+  window.removeEventListener('touchend', handleTouchEnd)
+})
+
+function getCanvas(): HTMLCanvasElement | null {
+  return canvasRef.value
+}
+
+defineExpose({
+  getCanvas,
+  redraw: render
+})
 </script>
 
 <style scoped>

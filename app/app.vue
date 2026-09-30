@@ -364,32 +364,81 @@
               <input
                 v-model.number="nameStyles.nameY"
                 type="range"
-                min="0"
-                max="950"
+                min="300"
+                max="700"
                 step="1"
                 class="w-full accent-blue-500 cursor-pointer"
               />
-              <div class="flex justify-between items-center mt-1 text-[10px] text-slate-500">
-                <span>0 px (Paling Atas)</span>
+              <!-- Step Buttons & Presets -->
+              <div class="flex flex-wrap items-center justify-between gap-1.5 mt-2">
                 <div class="flex items-center gap-1">
                   <button
                     type="button"
-                    @click="nameStyles.nameY = Math.max(0, (nameStyles.nameY || 0) - 5)"
-                    class="px-1.5 py-0.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded text-slate-300"
-                    title="Naik 5px"
+                    @click="nameStyles.nameY = Math.max(0, (nameStyles.nameY || 0) - 10)"
+                    class="px-2 py-0.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-slate-600 rounded text-[11px] font-medium text-slate-300 transition"
+                    title="Naik 10px"
                   >
-                    ▲ -5
+                    ▲ -10
                   </button>
                   <button
                     type="button"
-                    @click="nameStyles.nameY = Math.min(950, (nameStyles.nameY || 0) + 5)"
-                    class="px-1.5 py-0.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded text-slate-300"
-                    title="Turun 5px"
+                    @click="nameStyles.nameY = Math.max(0, (nameStyles.nameY || 0) - 2)"
+                    class="px-2 py-0.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-slate-600 rounded text-[11px] font-medium text-slate-300 transition"
+                    title="Naik 2px"
                   >
-                    ▼ +5
+                    ▲ -2
+                  </button>
+                  <button
+                    type="button"
+                    @click="nameStyles.nameY = Math.min(1000, (nameStyles.nameY || 0) + 2)"
+                    class="px-2 py-0.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-slate-600 rounded text-[11px] font-medium text-slate-300 transition"
+                    title="Turun 2px"
+                  >
+                    ▼ +2
+                  </button>
+                  <button
+                    type="button"
+                    @click="nameStyles.nameY = Math.min(1000, (nameStyles.nameY || 0) + 10)"
+                    class="px-2 py-0.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-slate-600 rounded text-[11px] font-medium text-slate-300 transition"
+                    title="Turun 10px"
+                  >
+                    ▼ +10
                   </button>
                 </div>
-                <span>950 px (Paling Bawah)</span>
+
+                <div class="flex items-center gap-1">
+                  <button
+                    type="button"
+                    @click="nameStyles.nameY = 380"
+                    class="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-[10px] font-medium transition"
+                    title="Posisi Lebih Tinggi"
+                  >
+                    Lebih Tinggi (380)
+                  </button>
+                  <button
+                    type="button"
+                    @click="nameStyles.nameY = 405; nameStyles.nameOffsetX = 0; nameStyles.nameFontSize = 32;"
+                    class="px-2 py-0.5 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 rounded text-[10px] font-bold transition"
+                  >
+                    🎯 Pas Tengah (405)
+                  </button>
+                  <button
+                    type="button"
+                    @click="nameStyles.nameY = 425"
+                    class="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-[10px] font-medium transition"
+                    title="Posisi Lebih Rendah"
+                  >
+                    Lebih Rendah (425)
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Drag & Drop Hint -->
+            <div class="p-2.5 bg-blue-500/10 border border-blue-500/20 rounded-lg text-[11px] text-blue-300 flex items-start gap-2">
+              <span>✨</span>
+              <div>
+                <b>Tips Interaktif:</b> Anda juga bisa langsung <b>mengklik dan menyeret (drag) teks nama</b> pada sertifikat di sebelah kanan untuk memposisikannya secara bebas!
               </div>
             </div>
 
@@ -535,8 +584,19 @@
             </button>
           </div>
 
-          <!-- Download Buttons -->
-          <div class="flex items-center gap-2.5">
+          <!-- Action Buttons (Preview, Single PDF, Batch ZIP) -->
+          <div class="flex items-center flex-wrap gap-2">
+            <!-- Dedicated Preview Button -->
+            <button
+              @click="openPreviewModal"
+              :disabled="!participants.length"
+              class="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-emerald-300 bg-emerald-950/50 hover:bg-emerald-900/60 hover:text-white border border-emerald-500/40 rounded-xl transition shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
+              title="Pratinjau Layar Penuh & Cek Kesesuaian Nama"
+            >
+              <Eye class="w-4 h-4 text-emerald-400" />
+              Preview Penuh
+            </button>
+
             <!-- Download Single Preview PDF -->
             <button
               @click="downloadCurrentPdf"
@@ -571,49 +631,58 @@
               <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
               Live Certificate Preview (A4 Landscape)
             </span>
-            <span class="text-[11px] bg-slate-800 px-2 py-0.5 rounded text-slate-300">
-              {{ customTemplateUrl ? 'Custom Template' : 'Template LAN RI' }}
-            </span>
+            <div class="flex items-center gap-2">
+              <span class="text-[11px] bg-slate-800 px-2 py-0.5 rounded text-slate-300">
+                {{ customTemplateUrl ? 'Custom Template' : 'Template LAN RI' }}
+              </span>
+              <button
+                @click="openPreviewModal"
+                class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 border border-emerald-500/30 rounded-lg transition"
+                title="Buka tampilan layar penuh"
+              >
+                <Maximize2 class="w-3.5 h-3.5" />
+                Perbesar
+              </button>
+            </div>
           </div>
 
           <!-- Scaled Certificate Wrapper for responsive display -->
-          <div class="w-full aspect-[1414/1000] relative bg-slate-950/40 rounded-xl overflow-hidden border border-slate-800 shadow-inner flex items-center justify-center p-2">
-            <div class="w-full h-full transform-gpu origin-top-left flex items-center justify-center">
-              
+          <div
+            ref="previewContainerRef"
+            class="w-full aspect-[1414/1000] relative bg-slate-950/60 rounded-xl overflow-hidden border border-slate-800 shadow-inner flex items-center justify-center"
+          >
+            <!-- Scaled inner wrapper maintaining exact 1414x1000 coordinate space -->
+            <div
+              class="origin-center transition-transform duration-75 select-none"
+              :style="{
+                width: '1414px',
+                height: '1000px',
+                transform: `scale(${previewScale})`,
+                flexShrink: 0
+              }"
+            >
               <!-- The actual certificate node -->
               <CertificatePreview
+                ref="previewCertificateRef"
                 id="certificate-preview-element"
                 :width="1414"
                 :height="1000"
                 :custom-template-url="customTemplateUrl"
                 :participant-name="currentParticipantName"
                 :styles="nameStyles"
-                class="shadow-2xl rounded-sm w-full h-full max-w-full max-h-full object-contain"
+                class="shadow-2xl rounded-sm"
               />
-
             </div>
           </div>
 
-          <div class="w-full mt-3 text-center text-[11px] text-slate-500">
-            💡 Gunakan tab <b class="text-slate-300">Atur Nama</b> di sebelah kiri untuk menggeser posisi nama naik/turun agar tepat di garis sertifikat.
+          <div class="w-full mt-3 text-center text-[11px] text-slate-400">
+            💡 Gunakan tab <b class="text-amber-400">Atur Nama</b> di sebelah kiri untuk menyesuaikan posisi vertikal (Y) dan ukuran font agar pas di atas garis sertifikat.
           </div>
 
         </div>
 
       </section>
     </main>
-
-    <!-- Hidden Offscreen Node used for High-DPI PDF Capture during batch generation -->
-    <div class="fixed left-[-9999px] top-[-9999px] pointer-events-none">
-      <CertificatePreview
-        id="certificate-render-worker"
-        :width="1414"
-        :height="1000"
-        :custom-template-url="customTemplateUrl"
-        :participant-name="workerState.name"
-        :styles="nameStyles"
-      />
-    </div>
 
     <!-- Progress Modal during Batch ZIP Generation -->
     <div
@@ -657,11 +726,156 @@
       </div>
     </div>
 
+    <!-- Fullscreen / Zoomable Preview Modal -->
+    <div
+      v-if="isPreviewModalOpen"
+      class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex flex-col items-center justify-between p-3 sm:p-5 overflow-hidden animate-in fade-in duration-150 select-none"
+    >
+      <!-- Modal Header -->
+      <div class="w-full max-w-6xl flex items-center justify-between bg-slate-900 border border-slate-800 px-4 py-3 rounded-2xl shadow-2xl flex-wrap gap-2">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30">
+            <Eye class="w-5 h-5" />
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-white flex items-center gap-2">
+              Pratinjau Sertifikat Peserta
+              <span class="text-xs text-amber-400 font-mono px-2 py-0.5 bg-amber-500/10 border border-amber-500/20 rounded-md">
+                {{ previewIndex + 1 }} / {{ participants.length }}
+              </span>
+            </h3>
+            <p class="text-xs text-slate-300 font-medium truncate max-w-sm sm:max-w-md">
+              {{ currentParticipantName }}
+            </p>
+          </div>
+        </div>
+
+        <!-- Center Controls: Prev/Next & Selector & Zoom -->
+        <div class="flex items-center gap-2 flex-wrap">
+          <button
+            @click="prevPreview"
+            :disabled="previewIndex <= 0"
+            class="p-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed text-white rounded-lg transition"
+            title="Peserta Sebelumnya"
+          >
+            <ChevronLeft class="w-4 h-4" />
+          </button>
+          
+          <select
+            v-model.number="previewIndex"
+            class="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white max-w-[180px] sm:max-w-[240px] truncate focus:outline-none focus:border-blue-500"
+          >
+            <option v-for="(p, i) in participants" :key="i" :value="i">
+              #{{ i + 1 }} - {{ p }}
+            </option>
+          </select>
+
+          <button
+            @click="nextPreview"
+            :disabled="previewIndex >= participants.length - 1"
+            class="p-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed text-white rounded-lg transition"
+            title="Peserta Berikutnya"
+          >
+            <ChevronRight class="w-4 h-4" />
+          </button>
+
+          <div class="h-5 w-px bg-slate-800 mx-1 hidden sm:block"></div>
+
+          <!-- Zoom controls -->
+          <div class="hidden sm:flex items-center gap-1 bg-slate-950 border border-slate-800 rounded-lg p-0.5 text-xs">
+            <button
+              @click="modalZoomLevel = Math.max(0.4, Number((modalZoomLevel - 0.1).toFixed(1)))"
+              class="p-1.5 hover:bg-slate-800 rounded text-slate-300 transition"
+              title="Perkecil"
+            >
+              <ZoomOut class="w-3.5 h-3.5" />
+            </button>
+            <span class="px-2 font-mono text-[11px] text-amber-400 min-w-[45px] text-center font-bold">
+              {{ Math.round(modalZoomLevel * 100) }}%
+            </span>
+            <button
+              @click="modalZoomLevel = Math.min(1.8, Number((modalZoomLevel + 0.1).toFixed(1)))"
+              class="p-1.5 hover:bg-slate-800 rounded text-slate-300 transition"
+              title="Perbesar"
+            >
+              <ZoomIn class="w-3.5 h-3.5" />
+            </button>
+            <button
+              @click="modalZoomLevel = 1"
+              class="px-2 py-0.5 text-[10px] text-slate-400 hover:text-white bg-slate-900 rounded font-medium transition"
+              title="Reset Zoom 100%"
+            >
+              100%
+            </button>
+          </div>
+        </div>
+
+        <!-- Action & Close Buttons -->
+        <div class="flex items-center gap-2">
+          <button
+            @click="downloadCurrentPdf"
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-semibold transition shadow-md"
+          >
+            <FileDown class="w-3.5 h-3.5" />
+            Unduh PDF Ini
+          </button>
+
+          <button
+            @click="closePreviewModal"
+            class="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition"
+            title="Tutup (Esc)"
+          >
+            <X class="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+
+      <!-- Modal Certificate Canvas Area -->
+      <div
+        ref="modalCanvasContainerRef"
+        class="flex-1 w-full max-w-6xl my-3 overflow-auto flex items-center justify-center p-4 rounded-2xl bg-slate-950/90 border border-slate-800/80 shadow-2xl relative"
+      >
+        <div
+          class="transition-transform duration-100 flex items-center justify-center"
+          :style="{
+            width: '1414px',
+            height: '1000px',
+            transform: `scale(${modalCalculatedScale})`,
+            transformOrigin: 'center center',
+            flexShrink: 0
+          }"
+        >
+          <CertificatePreview
+            ref="modalCertificateRef"
+            :width="1414"
+            :height="1000"
+            :custom-template-url="customTemplateUrl"
+            :participant-name="currentParticipantName"
+            :styles="nameStyles"
+            class="shadow-2xl rounded-sm"
+          />
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="w-full max-w-6xl flex items-center justify-between text-xs text-slate-400 px-2">
+        <span class="text-[11px]">
+          Gunakan tombol <b>← / →</b> untuk beralih nama peserta atau klik <b>Unduh PDF Ini</b> untuk mencetak.
+        </span>
+        <button
+          @click="closePreviewModal"
+          class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg text-xs transition"
+        >
+          Tutup Pratinjau
+        </button>
+      </div>
+    </div>
+
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, nextTick } from 'vue'
+import { ref, reactive, computed, nextTick, onMounted, onUnmounted } from 'vue'
 import Papa from 'papaparse'
 import confetti from 'canvas-confetti'
 import {
@@ -680,30 +894,115 @@ import {
   FileDown,
   Archive,
   Image as ImageIcon,
-  CheckCircle2
+  CheckCircle2,
+  Maximize2,
+  ZoomIn,
+  ZoomOut,
+  X
 } from 'lucide-vue-next'
-import { generateSingleCertificatePdf, generateBatchCertificatesZip } from '~/utils/pdfGenerator'
+import { generateSingleCertificatePdfFromCanvas, generateBatchCertificatesZip } from '~/utils/pdfGenerator'
 import type { NameOnlyStyles } from '~/components/CertificatePreview.vue'
 
 // Active tab on left column
 const activeTab = ref<'data' | 'template' | 'position'>('data')
 
+// Preview canvas instance refs
+const previewCertificateRef = ref<any>(null)
+const modalCertificateRef = ref<any>(null)
+
+// Preview modal state
+const isPreviewModalOpen = ref(false)
+const modalZoomLevel = ref(1.0)
+const modalCanvasContainerRef = ref<HTMLElement | null>(null)
+const modalContainerWidth = ref(1000)
+
+const modalCalculatedScale = computed(() => {
+  const baseScale = Math.min(modalContainerWidth.value / 1414, 0.75)
+  return Math.max(0.2, baseScale * modalZoomLevel.value)
+})
+
+function openPreviewModal() {
+  isPreviewModalOpen.value = true
+  modalZoomLevel.value = 1.0
+  nextTick(() => {
+    if (modalCanvasContainerRef.value) {
+      modalContainerWidth.value = modalCanvasContainerRef.value.clientWidth
+    }
+  })
+}
+
+function closePreviewModal() {
+  isPreviewModalOpen.value = false
+}
+
+// Global keydown listener for modal
+function handleGlobalKeyDown(e: KeyboardEvent) {
+  if (!isPreviewModalOpen.value) return
+  if (e.key === 'Escape') {
+    closePreviewModal()
+  } else if (e.key === 'ArrowLeft') {
+    prevPreview()
+  } else if (e.key === 'ArrowRight') {
+    nextPreview()
+  }
+}
+
+// Preview scale responsive observer
+const previewContainerRef = ref<HTMLElement | null>(null)
+const previewScale = ref<number>(0.5)
+
+function updatePreviewScale() {
+  if (previewContainerRef.value) {
+    const w = previewContainerRef.value.clientWidth
+    if (w > 0) {
+      previewScale.value = w / 1414
+    }
+  }
+}
+
+let resizeObserver: ResizeObserver | null = null
+
+onMounted(() => {
+  nextTick(() => {
+    updatePreviewScale()
+    if (previewContainerRef.value && typeof ResizeObserver !== 'undefined') {
+      resizeObserver = new ResizeObserver(() => {
+        updatePreviewScale()
+        if (modalCanvasContainerRef.value) {
+          modalContainerWidth.value = modalCanvasContainerRef.value.clientWidth
+        }
+      })
+      resizeObserver.observe(previewContainerRef.value)
+    }
+  })
+  window.addEventListener('resize', updatePreviewScale)
+  window.addEventListener('keydown', handleGlobalKeyDown)
+})
+
+onUnmounted(() => {
+  if (resizeObserver) {
+    resizeObserver.disconnect()
+  }
+  window.removeEventListener('resize', updatePreviewScale)
+  window.removeEventListener('keydown', handleGlobalKeyDown)
+})
+
 // Custom template state
 const customTemplateUrl = ref<string>('')
 const templateInputRef = ref<HTMLInputElement | null>(null)
 
-// Name Styling state
+// Name Styling state (calibrated to sit cleanly above template line)
 const defaultNameStyles: NameOnlyStyles = {
-  nameY: 415,
+  nameY: 405,
   nameOffsetX: 0,
-  nameFontSize: 34,
+  nameFontSize: 32,
   nameFontFamily: "'Plus Jakarta Sans', sans-serif",
-  nameFontWeight: 800,
+  nameFontWeight: 700,
   nameColor: '#000000',
   nameLetterSpacing: 0.5,
   showUnderline: false,
   underlineThickness: 2,
-  underlineMarginTop: 6
+  underlineMarginTop: 18
 }
 
 const nameStyles = reactive<NameOnlyStyles>({ ...defaultNameStyles })
@@ -874,22 +1173,36 @@ function parseCsvFile(file: File) {
   })
 }
 
-// Download single preview PDF
+// Download single preview PDF (100% direct from Canvas)
 async function downloadCurrentPdf() {
-  const el = document.getElementById('certificate-preview-element')
-  if (!el) return
+  if (isGenerating.value) return
+  isGenerating.value = true
+  try {
+    const canvas = isPreviewModalOpen.value
+      ? modalCertificateRef.value?.getCanvas() || previewCertificateRef.value?.getCanvas()
+      : previewCertificateRef.value?.getCanvas()
 
-  const name = currentParticipantName.value
-  const blob = await generateSingleCertificatePdf(el, `Sertifikat - ${name}.pdf`)
-  
-  const link = document.createElement('a')
-  link.href = URL.createObjectURL(blob)
-  link.download = `Sertifikat - ${name}.pdf`
-  link.click()
-  URL.revokeObjectURL(link.href)
+    if (!canvas) {
+      throw new Error('Elemen canvas pratinjau belum siap.')
+    }
+
+    const name = currentParticipantName.value
+    const blob = await generateSingleCertificatePdfFromCanvas(canvas, `Sertifikat - ${name}.pdf`)
+    
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.download = `Sertifikat - ${name}.pdf`
+    link.click()
+    URL.revokeObjectURL(link.href)
+  } catch (err) {
+    console.error('Error downloading single PDF:', err)
+    alert('Gagal mendownload PDF: ' + err)
+  } finally {
+    isGenerating.value = false
+  }
 }
 
-// Generate Batch ZIP
+// Generate Batch ZIP (Ultra-fast direct canvas rendering)
 async function generateAllZip() {
   if (!participants.value.length) return
   isGenerating.value = true
@@ -899,12 +1212,8 @@ async function generateAllZip() {
   try {
     const zipBlob = await generateBatchCertificatesZip(
       participants.value,
-      async (name, index) => {
-        workerState.name = name
-        workerState.index = index
-        await nextTick()
-        return document.getElementById('certificate-render-worker') as HTMLElement
-      },
+      customTemplateUrl.value || '/template_original.jpg',
+      nameStyles,
       (current, total, currentName) => {
         progress.current = current
         progress.total = total
